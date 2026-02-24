@@ -2,6 +2,20 @@
 
 Starter enterprise API project for a technical screen focused on C#, .NET Web API, Azure, AI Foundry, and Microsoft 365 Copilot integration.
 
+## Screenshots
+
+### Embedded Chat UI
+
+![Chat UI — conversation](docs/screenshots/chat-ui-conversation.png)
+
+### Scalar API Reference
+
+![Scalar API docs](docs/screenshots/scalar-api-docs.png)
+
+### Health Endpoint
+
+![Health endpoint JSON](docs/screenshots/health-endpoint.png)
+
 ## Tech Stack
 
 - C# / .NET 10 Web API (compatible with .NET 6+ concepts)
@@ -9,20 +23,28 @@ Starter enterprise API project for a technical screen focused on C#, .NET Web AP
 - REST endpoints with OpenAPI
 - Azure AI Foundry integration path (mock mode by default)
 - Copilot plugin manifest endpoint
+- Embedded chat UI (vanilla HTML/CSS/JS)
+- Scalar API reference (interactive docs)
 - xUnit tests
+- GitHub Actions CI
 
 ## Solution Structure
 
-- `src/AzureAiFoundryCopilot.Api`: HTTP API and DI wiring
+- `src/AzureAiFoundryCopilot.Api`: HTTP API, DI wiring, embedded chat UI
 - `src/AzureAiFoundryCopilot.Application`: Contracts and service interfaces
 - `src/AzureAiFoundryCopilot.Infrastructure`: AI Foundry + Copilot service implementations
-- `tests/AzureAiFoundryCopilot.Api.Tests`: Unit tests
+- `tests/AzureAiFoundryCopilot.Api.Tests`: Unit and integration tests
 
 ## Endpoints
 
-- `GET /api/health`: health and service metadata
-- `POST /api/ai-foundry/chat`: AI prompt completion flow
-- `GET /api/copilot/manifest`: plugin metadata for Copilot extension setup
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Embedded chat UI |
+| `GET` | `/scalar/v1` | Interactive API reference (dev) |
+| `GET` | `/openapi/v1.json` | OpenAPI document (dev) |
+| `GET` | `/api/health` | Health and service metadata |
+| `POST` | `/api/ai-foundry/chat` | AI prompt completion |
+| `GET` | `/api/copilot/manifest` | Copilot plugin metadata |
 
 ## Local Run
 
@@ -32,7 +54,9 @@ dotnet build azure-ai-foundry-copilot-api.slnx
 dotnet run --project src/AzureAiFoundryCopilot.Api
 ```
 
-OpenAPI document is exposed in development at `/openapi/v1.json`.
+Then open:
+- **Chat UI**: http://localhost:5153/
+- **API docs**: http://localhost:5153/scalar/v1
 
 ## Configuration
 

@@ -1,6 +1,7 @@
 using AzureAiFoundryCopilot.Application.Interfaces;
 using AzureAiFoundryCopilot.Infrastructure.Options;
 using AzureAiFoundryCopilot.Infrastructure.Services;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,10 +50,13 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapControllers();
 
 app.Run();
