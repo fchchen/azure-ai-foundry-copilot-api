@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using AzureAiFoundryCopilot.Application.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -15,9 +16,26 @@ public sealed class IntegrationTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task HealthEndpoint_Returns200()
+    public async Task HealthEndpoint_Returns200WithServiceFlags()
     {
         var response = await _client.GetAsync("/api/health");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ok", json.GetProperty("status").GetString());
+        Assert.Equal("azure-ai-foundry-copilot-api", json.GetProperty("service").GetString());
+
+        var services = json.GetProperty("services");
+        Assert.False(services.GetProperty("keyVaultEnabled").GetBoolean());
+        Assert.False(services.GetProperty("blobStorageEnabled").GetBoolean());
+        Assert.False(services.GetProperty("entraIdEnabled").GetBoolean());
+        Assert.False(services.GetProperty("appInsightsEnabled").GetBoolean());
+    }
+
+    [Fact]
+    public async Task HealthzEndpoint_Returns200()
+    {
+        var response = await _client.GetAsync("/healthz");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 

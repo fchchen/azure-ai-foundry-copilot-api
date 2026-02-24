@@ -1,3 +1,4 @@
+using AzureAiFoundryCopilot.Api.DependencyInjection;
 using AzureAiFoundryCopilot.Application.Interfaces;
 using AzureAiFoundryCopilot.Infrastructure.Options;
 using AzureAiFoundryCopilot.Infrastructure.Services;
@@ -43,6 +44,12 @@ builder.Services
 
 builder.Services.AddSingleton<ICopilotManifestService, CopilotManifestService>();
 
+// Azure services — each opt-in via Enabled flag
+builder.Services.AddKeyVaultServices(builder.Configuration);
+builder.Services.AddBlobStorageServices(builder.Configuration);
+builder.Services.AddEntraIdAuthentication(builder.Configuration);
+builder.Services.AddAppInsightsTelemetry(builder.Configuration);
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -55,9 +62,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();
+app.MapHealthChecks("/healthz");
 
 app.Run();
 
