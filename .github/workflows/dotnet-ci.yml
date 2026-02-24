@@ -1,0 +1,28 @@
+name: dotnet-ci
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore azure-ai-foundry-copilot-api.slnx
+
+      - name: Build
+        run: dotnet build azure-ai-foundry-copilot-api.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test azure-ai-foundry-copilot-api.slnx --configuration Release --no-build

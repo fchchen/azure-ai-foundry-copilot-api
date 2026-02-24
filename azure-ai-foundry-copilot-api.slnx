@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AzureAiFoundryCopilot.Api/AzureAiFoundryCopilot.Api.csproj" />
+    <Project Path="src/AzureAiFoundryCopilot.Application/AzureAiFoundryCopilot.Application.csproj" />
+    <Project Path="src/AzureAiFoundryCopilot.Infrastructure/AzureAiFoundryCopilot.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AzureAiFoundryCopilot.Api.Tests/AzureAiFoundryCopilot.Api.Tests.csproj" />
+  </Folder>
+</Solution>
