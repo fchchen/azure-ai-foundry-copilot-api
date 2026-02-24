@@ -1,0 +1,223 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Azure AI Foundry Copilot API",
+    "description": "API for Azure AI Foundry chat completions and conversation management, designed as a Microsoft 365 Copilot plugin.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:7181",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/api/ai-foundry/chat": {
+      "post": {
+        "operationId": "sendChatPrompt",
+        "summary": "Send a chat prompt to Azure AI Foundry",
+        "description": "Sends a user prompt to the Azure AI Foundry deployment and returns an AI-generated completion with model metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI completion returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChatResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error — prompt is empty or parameters are out of range."
+          }
+        }
+      }
+    },
+    "/api/conversations/{conversationId}": {
+      "get": {
+        "operationId": "getConversation",
+        "summary": "Get a conversation by ID",
+        "description": "Retrieves a specific conversation record by its unique identifier.",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the conversation to retrieve.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation found and returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatConversation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found."
+          }
+        }
+      }
+    },
+    "/api/conversations/recent": {
+      "get": {
+        "operationId": "listRecentConversations",
+        "summary": "List recent conversations",
+        "description": "Returns the most recent conversations, ordered by creation date descending.",
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Number of recent conversations to return. Defaults to 10.",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent conversations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatConversation"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations": {
+      "post": {
+        "operationId": "saveConversation",
+        "summary": "Save a conversation",
+        "description": "Saves a conversation record containing the user prompt, AI response, and metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatConversation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conversation saved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatConversation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error — ConversationId is required."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AiChatRequest": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The user's chat prompt to send to the AI model."
+          },
+          "maxTokens": {
+            "type": "integer",
+            "description": "Maximum number of tokens in the AI response. Range: 1–4096.",
+            "default": 512,
+            "minimum": 1,
+            "maximum": 4096
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Sampling temperature for response creativity. Range: 0.0–2.0.",
+            "default": 0.2,
+            "minimum": 0.0,
+            "maximum": 2.0
+          }
+        }
+      },
+      "AiChatResponse": {
+        "type": "object",
+        "properties": {
+          "completion": {
+            "type": "string",
+            "description": "The AI-generated response text."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model deployment name that generated the response."
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp when the response was generated."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of source references used in the response."
+          }
+        }
+      },
+      "ChatConversation": {
+        "type": "object",
+        "required": ["conversationId"],
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "description": "Unique identifier for the conversation."
+          },
+          "userPrompt": {
+            "type": "string",
+            "description": "The original user prompt."
+          },
+          "aiResponse": {
+            "type": "string",
+            "description": "The AI-generated response."
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp when the conversation was created."
+          }
+        }
+      }
+    }
+  }
+}

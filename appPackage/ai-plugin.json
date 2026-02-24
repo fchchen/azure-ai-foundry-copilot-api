@@ -1,0 +1,155 @@
+{
+  "$schema": "https://aka.ms/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Azure Foundry Assistant",
+  "description_for_human": "Chat with Azure AI Foundry and manage conversation history.",
+  "namespace": "azureFoundryAssistant",
+  "functions": [
+    {
+      "name": "sendChatPrompt",
+      "description": "Send a chat prompt to Azure AI Foundry and receive an AI-generated completion.",
+      "capabilities": {
+        "response_semantics": {
+          "data_path": "$",
+          "properties": {
+            "title": { "static_value": "AI Response" },
+            "subtitle": { "json_path": "$.model" }
+          },
+          "static_template": {
+            "type": "AdaptiveCard",
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "${completion}",
+                "wrap": true
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  { "title": "Model", "value": "${model}" },
+                  { "title": "Created", "value": "${createdAtUtc}" }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "getConversation",
+      "description": "Retrieve a specific conversation by its unique identifier.",
+      "capabilities": {
+        "response_semantics": {
+          "data_path": "$",
+          "properties": {
+            "title": { "static_value": "Conversation" },
+            "subtitle": { "json_path": "$.conversationId" }
+          },
+          "static_template": {
+            "type": "AdaptiveCard",
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "**User:** ${userPrompt}",
+                "wrap": true
+              },
+              {
+                "type": "TextBlock",
+                "text": "**AI:** ${aiResponse}",
+                "wrap": true
+              },
+              {
+                "type": "TextBlock",
+                "text": "${createdAtUtc}",
+                "isSubtle": true,
+                "size": "Small"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "listRecentConversations",
+      "description": "List the most recent conversations, optionally specifying how many to return.",
+      "capabilities": {
+        "response_semantics": {
+          "data_path": "$",
+          "properties": {
+            "title": { "static_value": "Recent Conversations" }
+          },
+          "static_template": {
+            "type": "AdaptiveCard",
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "Recent Conversations",
+                "weight": "Bolder",
+                "size": "Medium"
+              },
+              {
+                "type": "Container",
+                "$data": "${$root}",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "**${userPrompt}** — ${createdAtUtc}",
+                    "wrap": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "saveConversation",
+      "description": "Save a conversation record with user prompt and AI response.",
+      "capabilities": {
+        "response_semantics": {
+          "data_path": "$",
+          "properties": {
+            "title": { "static_value": "Conversation Saved" },
+            "subtitle": { "json_path": "$.conversationId" }
+          },
+          "static_template": {
+            "type": "AdaptiveCard",
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "Conversation **${conversationId}** saved successfully.",
+                "wrap": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "type": "OpenApi",
+      "auth": {
+        "type": "None"
+      },
+      "spec": {
+        "url": "openapi.json"
+      },
+      "run_for_functions": [
+        "sendChatPrompt",
+        "getConversation",
+        "listRecentConversations",
+        "saveConversation"
+      ]
+    }
+  ]
+}

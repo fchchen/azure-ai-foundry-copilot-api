@@ -1,0 +1,37 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.18/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.18",
+  "version": "1.0.0",
+  "id": "{{APP_ID}}",
+  "developer": {
+    "name": "Contoso",
+    "websiteUrl": "https://github.com/fchchen/azure-ai-foundry-copilot-api",
+    "privacyUrl": "https://github.com/fchchen/azure-ai-foundry-copilot-api/blob/main/PRIVACY.md",
+    "termsOfUseUrl": "https://github.com/fchchen/azure-ai-foundry-copilot-api/blob/main/TERMS.md"
+  },
+  "name": {
+    "short": "Azure Foundry Assistant",
+    "full": "Azure AI Foundry Copilot Assistant"
+  },
+  "description": {
+    "short": "Copilot plugin for enterprise AI task automation.",
+    "full": "A Microsoft 365 Copilot plugin that connects to Azure AI Foundry for chat completions, conversation history, and enterprise AI workflows."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0078D4",
+  "copilotAgents": {
+    "declarativeAgents": [
+      {
+        "id": "azureFoundryAssistant",
+        "file": "declarativeAgent.json"
+      }
+    ]
+  },
+  "validDomains": [
+    "localhost",
+    "*.azurewebsites.net"
+  ]
+}

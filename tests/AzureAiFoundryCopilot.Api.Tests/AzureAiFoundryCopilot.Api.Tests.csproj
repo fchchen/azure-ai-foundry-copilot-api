@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\src\AzureAiFoundryCopilot.Infrastructure\AzureAiFoundryCopilot.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\appPackage\*.json" Link="appPackage\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
