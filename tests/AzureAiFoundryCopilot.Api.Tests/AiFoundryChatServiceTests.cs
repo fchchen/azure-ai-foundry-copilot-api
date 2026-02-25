@@ -12,8 +12,7 @@ public sealed class AiFoundryChatServiceTests
     public async Task CompleteAsync_WhenMockEnabled_ReturnsMockResponse()
     {
         var options = Options.Create(new AzureAiFoundryOptions { UseMockResponses = true });
-        using var httpClient = new HttpClient();
-        var service = new AiFoundryChatService(httpClient, options, NullLogger<AiFoundryChatService>.Instance);
+        var service = new AiFoundryChatService(options, NullLogger<AiFoundryChatService>.Instance);
 
         var result = await service.CompleteAsync(
             new AiChatRequest("Draft a status update for the release."),
@@ -28,8 +27,7 @@ public sealed class AiFoundryChatServiceTests
     public async Task CompleteAsync_WhenNotMockAndMissingConfig_ThrowsInvalidOperation()
     {
         var options = Options.Create(new AzureAiFoundryOptions { UseMockResponses = false });
-        using var httpClient = new HttpClient();
-        var service = new AiFoundryChatService(httpClient, options, NullLogger<AiFoundryChatService>.Instance);
+        var service = new AiFoundryChatService(options, NullLogger<AiFoundryChatService>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.CompleteAsync(

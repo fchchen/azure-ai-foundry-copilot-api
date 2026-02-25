@@ -1,23 +1,21 @@
-using System.Net.Http.Json;
-using System.Text.Json;
+using System.ClientModel;
+using Azure.AI.OpenAI;
 using AzureAiFoundryCopilot.Application.Contracts;
 using AzureAiFoundryCopilot.Application.Interfaces;
 using AzureAiFoundryCopilot.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI.Chat;
 
 namespace AzureAiFoundryCopilot.Infrastructure.Services;
 
 public sealed class AiFoundryChatService : IAiFoundryChatService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private readonly HttpClient _httpClient;
     private readonly AzureAiFoundryOptions _options;
     private readonly ILogger<AiFoundryChatService> _logger;
 
-    public AiFoundryChatService(HttpClient httpClient, IOptions<AzureAiFoundryOptions> options, ILogger<AiFoundryChatService> logger)
+    public AiFoundryChatService(IOptions<AzureAiFoundryOptions> options, ILogger<AiFoundryChatService> logger)
     {
-        _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
     }
@@ -42,64 +40,38 @@ public sealed class AiFoundryChatService : IAiFoundryChatService
             throw new InvalidOperationException("Azure AI Foundry configuration is incomplete.");
         }
 
-        var requestBody = new
+        var azureClient = new AzureOpenAIClient(
+            new Uri(_options.Endpoint),
+            new ApiKeyCredential(_options.ApiKey));
+
+        var chatClient = azureClient.GetChatClient(_options.Deployment);
+
+        var messages = new ChatMessage[]
         {
-            messages = new object[]
-            {
-                new { role = "system", content = "You are an enterprise copilot for Microsoft 365 workflows." },
-                new { role = "user", content = request.Prompt }
-            },
-            max_tokens = request.MaxTokens,
-            temperature = request.Temperature
+            new SystemChatMessage("You are an enterprise copilot for Microsoft 365 workflows."),
+            new UserChatMessage(request.Prompt)
         };
 
-        var endpoint =
-            $"{_options.Endpoint.TrimEnd('/')}/openai/deployments/{_options.Deployment}/chat/completions?api-version={_options.ApiVersion}";
-
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        var chatOptions = new ChatCompletionOptions
         {
-            Content = JsonContent.Create(requestBody, options: JsonOptions)
+            MaxOutputTokenCount = request.MaxTokens,
+            Temperature = (float)request.Temperature
         };
-        httpRequest.Headers.Add("api-key", _options.ApiKey);
 
-        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Azure AI Foundry call failed with status {StatusCode}: {Body}", (int)response.StatusCode, body);
-            throw new InvalidOperationException($"Azure AI Foundry call failed: {(int)response.StatusCode} {body}");
-        }
+        ChatCompletion completion = await chatClient.CompleteChatAsync(messages, chatOptions, cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<FoundryChatResponse>(JsonOptions, cancellationToken);
-        var completion = payload?.Choices?.FirstOrDefault()?.Message?.Content;
-        if (string.IsNullOrWhiteSpace(completion))
+        var content = completion.Content[0].Text;
+        if (string.IsNullOrWhiteSpace(content))
         {
             _logger.LogWarning("Azure AI Foundry response did not include content.");
             throw new InvalidOperationException("Azure AI Foundry response did not include content.");
         }
 
         return new AiChatResponse(
-            Completion: completion,
-            Model: payload?.Model ?? _options.Deployment,
+            Completion: content,
+            Model: completion.Model ?? _options.Deployment,
             CreatedAtUtc: DateTimeOffset.UtcNow,
             Sources: [$"azure-ai-foundry://{_options.Deployment}"]
         );
-    }
-
-    private sealed class FoundryChatResponse
-    {
-        public string? Model { get; init; }
-
-        public Choice[]? Choices { get; init; }
-    }
-
-    private sealed class Choice
-    {
-        public Message? Message { get; init; }
-    }
-
-    private sealed class Message
-    {
-        public string? Content { get; init; }
     }
 }

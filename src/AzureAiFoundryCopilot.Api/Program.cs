@@ -37,10 +37,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// HttpClient with resilience
-builder.Services
-    .AddHttpClient<IAiFoundryChatService, AiFoundryChatService>()
-    .AddStandardResilienceHandler();
+builder.Services.AddSingleton<IAiFoundryChatService, AiFoundryChatService>();
 
 builder.Services.AddSingleton<ICopilotManifestService, CopilotManifestService>();
 
