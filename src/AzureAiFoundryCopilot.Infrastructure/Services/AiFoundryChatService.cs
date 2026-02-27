@@ -12,11 +12,18 @@ namespace AzureAiFoundryCopilot.Infrastructure.Services;
 public sealed class AiFoundryChatService : IAiFoundryChatService
 {
     private readonly AzureAiFoundryOptions _options;
+    private readonly ISecretService _secretService;
     private readonly ILogger<AiFoundryChatService> _logger;
+    private readonly SemaphoreSlim _clientInitLock = new(1, 1);
+    private ChatClient? _chatClient;
 
-    public AiFoundryChatService(IOptions<AzureAiFoundryOptions> options, ILogger<AiFoundryChatService> logger)
+    public AiFoundryChatService(
+        IOptions<AzureAiFoundryOptions> options,
+        ISecretService secretService,
+        ILogger<AiFoundryChatService> logger)
     {
         _options = options.Value;
+        _secretService = secretService;
         _logger = logger;
     }
 
@@ -33,18 +40,15 @@ public sealed class AiFoundryChatService : IAiFoundryChatService
             );
         }
 
+        var apiKey = await ResolveApiKeyAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(_options.Endpoint) ||
             string.IsNullOrWhiteSpace(_options.Deployment) ||
-            string.IsNullOrWhiteSpace(_options.ApiKey))
+            string.IsNullOrWhiteSpace(apiKey))
         {
             throw new InvalidOperationException("Azure AI Foundry configuration is incomplete.");
         }
 
-        var azureClient = new AzureOpenAIClient(
-            new Uri(_options.Endpoint),
-            new ApiKeyCredential(_options.ApiKey));
-
-        var chatClient = azureClient.GetChatClient(_options.Deployment);
+        var chatClient = await GetChatClientAsync(apiKey, cancellationToken);
 
         var messages = new ChatMessage[]
         {
@@ -73,5 +77,46 @@ public sealed class AiFoundryChatService : IAiFoundryChatService
             CreatedAtUtc: DateTimeOffset.UtcNow,
             Sources: [$"azure-ai-foundry://{_options.Deployment}"]
         );
+    }
+
+    private async Task<ChatClient> GetChatClientAsync(string apiKey, CancellationToken cancellationToken)
+    {
+        if (_chatClient is not null)
+            return _chatClient;
+
+        await _clientInitLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_chatClient is not null)
+                return _chatClient;
+
+            var azureClient = new AzureOpenAIClient(
+                new Uri(_options.Endpoint),
+                new ApiKeyCredential(apiKey));
+            _chatClient = azureClient.GetChatClient(_options.Deployment);
+            return _chatClient;
+        }
+        finally
+        {
+            _clientInitLock.Release();
+        }
+    }
+
+    private async Task<string> ResolveApiKeyAsync(CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(_options.ApiKey))
+            return _options.ApiKey;
+
+        if (string.IsNullOrWhiteSpace(_options.ApiKeySecretName))
+            return string.Empty;
+
+        var secretValue = await _secretService.GetSecretAsync(_options.ApiKeySecretName, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(secretValue))
+            return secretValue;
+
+        _logger.LogWarning(
+            "Azure AI Foundry API key was not configured directly and secret {SecretName} was not found.",
+            _options.ApiKeySecretName);
+        return string.Empty;
     }
 }

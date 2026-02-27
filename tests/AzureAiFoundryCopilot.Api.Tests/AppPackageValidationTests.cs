@@ -92,4 +92,55 @@ public sealed class AppPackageValidationTests
 
         Assert.Equal(functionNames, runForFunctions);
     }
+
+    [Fact]
+    public void AiPlugin_RuntimeAuthType_IsOAuth()
+    {
+        var plugin = LoadJson("ai-plugin.json");
+        var authType = plugin.GetProperty("runtimes")[0].GetProperty("auth").GetProperty("type").GetString();
+        Assert.Equal("OAuth", authType);
+    }
+
+    [Fact]
+    public void OpenApi_DefinesOAuthSecurityScheme()
+    {
+        var openapi = LoadJson("openapi.json");
+        var schemeType = openapi.GetProperty("components")
+            .GetProperty("securitySchemes")
+            .GetProperty("oauth2Auth")
+            .GetProperty("type")
+            .GetString();
+        Assert.Equal("oauth2", schemeType);
+    }
+
+    [Theory]
+    [InlineData("AiChatResponse", "completion")]
+    [InlineData("AiChatResponse", "model")]
+    [InlineData("AiChatResponse", "createdAtUtc")]
+    [InlineData("AiChatResponse", "sources")]
+    [InlineData("UnreadEmailSummaryResponse", "summary")]
+    [InlineData("UnreadEmailSummaryResponse", "unreadCount")]
+    [InlineData("UnreadEmailSummaryResponse", "emails")]
+    [InlineData("UnreadEmailSummaryResponse", "model")]
+    [InlineData("UnreadEmailSummaryResponse", "createdAtUtc")]
+    [InlineData("UnreadEmailSummaryResponse", "sources")]
+    [InlineData("GraphEmailMessage", "id")]
+    [InlineData("GraphEmailMessage", "subject")]
+    [InlineData("GraphEmailMessage", "fromName")]
+    [InlineData("GraphEmailMessage", "fromAddress")]
+    [InlineData("GraphEmailMessage", "receivedAtUtc")]
+    [InlineData("GraphEmailMessage", "preview")]
+    public void OpenApi_ResponseSchemas_DefineRequiredFields(string schemaName, string requiredField)
+    {
+        var openapi = LoadJson("openapi.json");
+        var requiredFields = openapi.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(schemaName)
+            .GetProperty("required")
+            .EnumerateArray()
+            .Select(item => item.GetString())
+            .ToList();
+
+        Assert.Contains(requiredField, requiredFields);
+    }
 }

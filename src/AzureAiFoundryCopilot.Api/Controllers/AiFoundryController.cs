@@ -1,5 +1,7 @@
 using AzureAiFoundryCopilot.Application.Contracts;
+using AzureAiFoundryCopilot.Application.Exceptions;
 using AzureAiFoundryCopilot.Application.Interfaces;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,18 +12,12 @@ namespace AzureAiFoundryCopilot.Api.Controllers;
 [Route("api/ai-foundry")]
 public sealed class AiFoundryController : ControllerBase
 {
-    private readonly IAiFoundryChatService _aiFoundryChatService;
-    private readonly IConversationStorageService _conversationStorage;
-    private readonly ILogger<AiFoundryController> _logger;
+    private readonly IAiFoundryOrchestrationService _orchestrationService;
 
     public AiFoundryController(
-        IAiFoundryChatService aiFoundryChatService,
-        IConversationStorageService conversationStorage,
-        ILogger<AiFoundryController> logger)
+        IAiFoundryOrchestrationService orchestrationService)
     {
-        _aiFoundryChatService = aiFoundryChatService;
-        _conversationStorage = conversationStorage;
-        _logger = logger;
+        _orchestrationService = orchestrationService;
     }
 
     [HttpPost("chat")]
@@ -30,22 +26,32 @@ public sealed class AiFoundryController : ControllerBase
     public async Task<IActionResult> Chat([FromBody] AiChatRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
-        {
-            _logger.LogWarning("Bad request rejected: {@Errors}", ModelState);
             return ValidationProblem();
-        }
 
-        _logger.LogInformation("Chat request received — prompt length: {Length}", request.Prompt.Length);
-        var response = await _aiFoundryChatService.CompleteAsync(request, cancellationToken);
-
-        var conversation = new ChatConversation(
-            ConversationId: Guid.NewGuid().ToString("N"),
-            UserPrompt: request.Prompt,
-            AiResponse: response.Completion,
-            CreatedAtUtc: response.CreatedAtUtc);
-
-        await _conversationStorage.SaveAsync(conversation, cancellationToken);
-
+        var response = await _orchestrationService.CompleteAndPersistConversationAsync(request, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpPost("unread-email-summary")]
+    [ProducesResponseType(typeof(UnreadEmailSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SummarizeUnreadEmails(
+        [FromBody] UnreadEmailSummaryRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem();
+
+        try
+        {
+            var accessToken = await HttpContext.GetTokenAsync("access_token");
+            var response = await _orchestrationService.SummarizeUnreadEmailsAsync(request, accessToken, cancellationToken);
+            return Ok(response);
+        }
+        catch (AccessTokenRequiredException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
     }
 }

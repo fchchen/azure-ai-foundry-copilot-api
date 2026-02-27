@@ -8,11 +8,17 @@ namespace AzureAiFoundryCopilot.Api.Tests;
 
 public sealed class AiFoundryChatServiceTests
 {
+    private static InMemorySecretService CreateSecretService() =>
+        new(NullLogger<InMemorySecretService>.Instance);
+
     [Fact]
     public async Task CompleteAsync_WhenMockEnabled_ReturnsMockResponse()
     {
         var options = Options.Create(new AzureAiFoundryOptions { UseMockResponses = true });
-        var service = new AiFoundryChatService(options, NullLogger<AiFoundryChatService>.Instance);
+        var service = new AiFoundryChatService(
+            options,
+            CreateSecretService(),
+            NullLogger<AiFoundryChatService>.Instance);
 
         var result = await service.CompleteAsync(
             new AiChatRequest("Draft a status update for the release."),
@@ -27,7 +33,10 @@ public sealed class AiFoundryChatServiceTests
     public async Task CompleteAsync_WhenNotMockAndMissingConfig_ThrowsInvalidOperation()
     {
         var options = Options.Create(new AzureAiFoundryOptions { UseMockResponses = false });
-        var service = new AiFoundryChatService(options, NullLogger<AiFoundryChatService>.Instance);
+        var service = new AiFoundryChatService(
+            options,
+            CreateSecretService(),
+            NullLogger<AiFoundryChatService>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.CompleteAsync(

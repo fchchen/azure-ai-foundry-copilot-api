@@ -1,28 +1,52 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AzureAiFoundryCopilot.Infrastructure.Options;
 
 public sealed class CopilotPluginOptions
 {
     public const string SectionName = "CopilotPlugin";
 
-    public string PluginId { get; init; } = "azure-foundry-assistant";
+    [Required(AllowEmptyStrings = false)]
+    public string PluginId { get; init; } = string.Empty;
 
-    public string Name { get; init; } = "Azure Foundry Assistant";
+    [Required(AllowEmptyStrings = false)]
+    public string Name { get; init; } = string.Empty;
 
-    public string Description { get; init; } = "Copilot plugin for enterprise AI task automation.";
+    [Required(AllowEmptyStrings = false)]
+    public string Description { get; init; } = string.Empty;
 
-    public string FullDescription { get; init; } = "A Microsoft 365 Copilot plugin that connects to Azure AI Foundry for chat completions, conversation history, and enterprise AI workflows.";
+    [Required(AllowEmptyStrings = false)]
+    public string FullDescription { get; init; } = string.Empty;
 
-    public string ApiBaseUrl { get; init; } = "https://localhost:7181";
+    [Required(AllowEmptyStrings = false)]
+    [Url]
+    public string ApiBaseUrl { get; init; } = string.Empty;
 
-    public string DeveloperName { get; init; } = "Contoso";
+    [Required(AllowEmptyStrings = false)]
+    public string DeveloperName { get; init; } = string.Empty;
 
-    public string WebsiteUrl { get; init; } = "https://github.com/fchchen/azure-ai-foundry-copilot-api";
+    [Required(AllowEmptyStrings = false)]
+    [Url]
+    public string WebsiteUrl { get; init; } = string.Empty;
 
-    public string PrivacyUrl { get; init; } = "https://github.com/fchchen/azure-ai-foundry-copilot-api/blob/main/PRIVACY.md";
+    [Required(AllowEmptyStrings = false)]
+    [Url]
+    public string PrivacyUrl { get; init; } = string.Empty;
 
-    public string TermsOfUseUrl { get; init; } = "https://github.com/fchchen/azure-ai-foundry-copilot-api/blob/main/TERMS.md";
+    [Required(AllowEmptyStrings = false)]
+    [Url]
+    public string TermsOfUseUrl { get; init; } = string.Empty;
 
-    public string ContactEmail { get; init; } = "admin@contoso.com";
+    [Required(AllowEmptyStrings = false)]
+    [EmailAddress]
+    public string ContactEmail { get; init; } = string.Empty;
 
-    public string Version { get; init; } = "1.0.0";
+    [Required(AllowEmptyStrings = false)]
+    public string Version { get; init; } = string.Empty;
+
+    [Required(AllowEmptyStrings = false)]
+    public string Instructions { get; init; } = string.Empty;
+
+    [MinLength(1)]
+    public IReadOnlyList<string> ConversationStarters { get; init; } = [];
 }

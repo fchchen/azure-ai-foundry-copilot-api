@@ -8,6 +8,7 @@ using AzureAiFoundryCopilot.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
+using System.Net.Http.Headers;
 
 namespace AzureAiFoundryCopilot.Api.DependencyInjection;
 
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
         services
             .AddOptions<KeyVaultOptions>()
             .BindConfiguration(KeyVaultOptions.SectionName)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         var options = configuration.GetSection(KeyVaultOptions.SectionName).Get<KeyVaultOptions>();
@@ -40,6 +42,7 @@ public static class ServiceCollectionExtensions
         services
             .AddOptions<BlobStorageOptions>()
             .BindConfiguration(BlobStorageOptions.SectionName)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         var options = configuration.GetSection(BlobStorageOptions.SectionName).Get<BlobStorageOptions>();
@@ -57,11 +60,15 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddEntraIdAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddEntraIdAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services
             .AddOptions<EntraIdOptions>()
             .BindConfiguration(EntraIdOptions.SectionName)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         var options = configuration.GetSection(EntraIdOptions.SectionName).Get<EntraIdOptions>();
@@ -73,13 +80,18 @@ public static class ServiceCollectionExtensions
 
             services.AddAuthorization();
         }
-        else
+        else if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
         {
             services.AddAuthentication(MockAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, MockAuthHandler>(
                     MockAuthHandler.SchemeName, _ => { });
 
             services.AddAuthorization();
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Mock authentication is only allowed in Development/Testing. Set EntraId:Enabled=true for production-like environments.");
         }
 
         return services;
@@ -90,6 +102,7 @@ public static class ServiceCollectionExtensions
         services
             .AddOptions<AppInsightsOptions>()
             .BindConfiguration(AppInsightsOptions.SectionName)
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         var options = configuration.GetSection(AppInsightsOptions.SectionName).Get<AppInsightsOptions>();
@@ -103,6 +116,32 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddHealthChecks();
+
+        return services;
+    }
+
+    public static IServiceCollection AddGraphServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddOptions<MicrosoftGraphOptions>()
+            .BindConfiguration(MicrosoftGraphOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var options = configuration.GetSection(MicrosoftGraphOptions.SectionName).Get<MicrosoftGraphOptions>();
+
+        if (options?.Enabled is true)
+        {
+            services.AddHttpClient<IGraphMailService, GraphMailService>(client =>
+            {
+                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            });
+        }
+        else
+        {
+            services.AddSingleton<IGraphMailService, MockGraphMailService>();
+        }
 
         return services;
     }

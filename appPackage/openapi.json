@@ -11,6 +11,13 @@
       "description": "Local development server"
     }
   ],
+  "security": [
+    {
+      "oauth2Auth": [
+        "api://YOUR-CLIENT-ID/access_as_user"
+      ]
+    }
+  ],
   "paths": {
     "/api/ai-foundry/chat": {
       "post": {
@@ -40,6 +47,38 @@
           },
           "400": {
             "description": "Validation error — prompt is empty or parameters are out of range."
+          }
+        }
+      }
+    },
+    "/api/ai-foundry/unread-email-summary": {
+      "post": {
+        "operationId": "summarizeMyUnreadEmails",
+        "summary": "Summarize unread inbox emails",
+        "description": "Reads unread Microsoft 365 inbox emails through Microsoft Graph and uses Azure AI Foundry to produce a prioritized summary.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnreadEmailSummaryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unread inbox summary returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadEmailSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error — top/maxTokens/temperature values are out of range."
           }
         }
       }
@@ -145,6 +184,20 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "oauth2Auth": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+              "api://YOUR-CLIENT-ID/access_as_user": "Access Azure AI Foundry Copilot API as signed-in user."
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "AiChatRequest": {
         "type": "object",
@@ -172,6 +225,12 @@
       },
       "AiChatResponse": {
         "type": "object",
+        "required": [
+          "completion",
+          "model",
+          "createdAtUtc",
+          "sources"
+        ],
         "properties": {
           "completion": {
             "type": "string",
@@ -195,9 +254,111 @@
           }
         }
       },
+      "UnreadEmailSummaryRequest": {
+        "type": "object",
+        "properties": {
+          "top": {
+            "type": "integer",
+            "description": "Number of unread messages to fetch from inbox. Range: 1–25.",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 25
+          },
+          "maxTokens": {
+            "type": "integer",
+            "description": "Maximum number of tokens in the AI summary. Range: 64–4096.",
+            "default": 512,
+            "minimum": 64,
+            "maximum": 4096
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Sampling temperature for summary generation. Range: 0.0–2.0.",
+            "default": 0.2,
+            "minimum": 0.0,
+            "maximum": 2.0
+          }
+        }
+      },
+      "GraphEmailMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "subject",
+          "fromName",
+          "fromAddress",
+          "receivedAtUtc",
+          "preview"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "fromName": {
+            "type": "string"
+          },
+          "fromAddress": {
+            "type": "string"
+          },
+          "receivedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "preview": {
+            "type": "string"
+          }
+        }
+      },
+      "UnreadEmailSummaryResponse": {
+        "type": "object",
+        "required": [
+          "summary",
+          "unreadCount",
+          "emails",
+          "model",
+          "createdAtUtc",
+          "sources"
+        ],
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "AI-generated summary and prioritization of unread inbox messages."
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GraphEmailMessage"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ChatConversation": {
         "type": "object",
-        "required": ["conversationId"],
+        "required": [
+          "conversationId",
+          "userPrompt",
+          "aiResponse",
+          "createdAtUtc"
+        ],
         "properties": {
           "conversationId": {
             "type": "string",

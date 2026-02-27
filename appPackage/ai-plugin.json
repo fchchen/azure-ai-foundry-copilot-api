@@ -2,7 +2,7 @@
   "$schema": "https://aka.ms/json-schemas/copilot/plugin/v2.4/schema.json",
   "schema_version": "v2.4",
   "name_for_human": "Azure Foundry Assistant",
-  "description_for_human": "Chat with Azure AI Foundry and manage conversation history.",
+  "description_for_human": "Chat with Azure AI Foundry, summarize unread inbox messages, and manage conversation history.",
   "namespace": "azureFoundryAssistant",
   "functions": [
     {
@@ -31,6 +31,37 @@
                   { "title": "Model", "value": "${model}" },
                   { "title": "Created", "value": "${createdAtUtc}" }
                 ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "summarizeMyUnreadEmails",
+      "description": "Summarize unread Microsoft 365 inbox messages and recommend next actions.",
+      "capabilities": {
+        "response_semantics": {
+          "data_path": "$",
+          "properties": {
+            "title": { "static_value": "Unread Email Summary" },
+            "subtitle": { "json_path": "$.unreadCount" }
+          },
+          "static_template": {
+            "type": "AdaptiveCard",
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "${summary}",
+                "wrap": true
+              },
+              {
+                "type": "TextBlock",
+                "text": "Unread count: ${unreadCount}",
+                "spacing": "Medium",
+                "weight": "Bolder"
               }
             ]
           }
@@ -139,13 +170,17 @@
     {
       "type": "OpenApi",
       "auth": {
-        "type": "None"
+        "type": "OAuth",
+        "authorization_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "scope": "api://YOUR-CLIENT-ID/access_as_user"
       },
       "spec": {
         "url": "openapi.json"
       },
       "run_for_functions": [
         "sendChatPrompt",
+        "summarizeMyUnreadEmails",
         "getConversation",
         "listRecentConversations",
         "saveConversation"
