@@ -25,4 +25,20 @@ jobs:
         run: dotnet build azure-ai-foundry-copilot-api.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test azure-ai-foundry-copilot-api.slnx --configuration Release --no-build
+        run: dotnet test azure-ai-foundry-copilot-api.slnx --configuration Release --no-build --collect:"XPlat Code Coverage"
+
+      - name: Generate Coverage Summary
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          reportgenerator "-reports:**/coverage.cobertura.xml" "-targetdir:artifacts/coverage-report" "-reporttypes:MarkdownSummaryGithub;Cobertura"
+          cat artifacts/coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: artifacts/coverage-report
+          if-no-files-found: error
