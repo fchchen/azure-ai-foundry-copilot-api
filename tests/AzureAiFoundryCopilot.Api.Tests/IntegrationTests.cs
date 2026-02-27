@@ -66,6 +66,6 @@ public sealed class IntegrationTests : IClassFixture<WebApplicationFactory<Progr
 
         var result = await response.Content.ReadFromJsonAsync<AiChatResponse>();
         Assert.NotNull(result);
-        Assert.StartsWith("[Mock]", result.Completion);
+        Assert.NotEmpty(result.Completion);
     }
 }

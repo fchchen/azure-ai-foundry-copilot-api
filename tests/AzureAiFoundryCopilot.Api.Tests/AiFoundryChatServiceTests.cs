@@ -24,7 +24,7 @@ public sealed class AiFoundryChatServiceTests
             new AiChatRequest("Draft a status update for the release."),
             CancellationToken.None);
 
-        Assert.StartsWith("[Mock] Processed prompt:", result.Completion);
+        Assert.NotEmpty(result.Completion);
         Assert.Equal("mock-gpt", result.Model);
         Assert.Contains("mock://ai-foundry", result.Sources);
     }

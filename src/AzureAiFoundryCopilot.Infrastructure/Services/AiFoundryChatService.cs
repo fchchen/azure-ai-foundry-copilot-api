@@ -33,7 +33,7 @@ public sealed class AiFoundryChatService : IAiFoundryChatService
         {
             _logger.LogInformation("Mock mode enabled — returning synthetic response for prompt.");
             return new AiChatResponse(
-                Completion: $"[Mock] Processed prompt: {request.Prompt}",
+                Completion: GenerateMockResponse(request.Prompt),
                 Model: "mock-gpt",
                 CreatedAtUtc: DateTimeOffset.UtcNow,
                 Sources: ["mock://ai-foundry"]
@@ -77,6 +77,34 @@ public sealed class AiFoundryChatService : IAiFoundryChatService
             CreatedAtUtc: DateTimeOffset.UtcNow,
             Sources: [$"azure-ai-foundry://{_options.Deployment}"]
         );
+    }
+
+    private static string GenerateMockResponse(string prompt)
+    {
+        var lower = prompt.ToLowerInvariant();
+
+        if (lower.Contains("azure ai foundry") || lower.Contains("ai foundry"))
+            return "Azure AI Foundry is Microsoft's unified platform for building, deploying, and managing AI solutions at enterprise scale. It provides access to leading foundation models—including GPT-4o—along with built-in safety, governance, and observability tooling. You can use it to power chat completions, document analysis, and custom fine-tuned workflows directly within your Microsoft 365 environment.";
+
+        if (lower.Contains("email") || lower.Contains("inbox") || lower.Contains("unread") || lower.Contains("mail"))
+            return "I can access your Microsoft 365 inbox via Microsoft Graph to surface unread messages, prioritize by urgency, and suggest next actions. Try the **Summarize unread emails** capability — it identifies action items, highlights escalations, and groups threads by topic so you can triage your inbox in seconds.";
+
+        if (lower.Contains("copilot") || lower.Contains("plugin") || lower.Contains("teams") || lower.Contains("manifest"))
+            return "This service exposes a declarative Microsoft 365 Copilot plugin. The manifest chain — `manifest.json` → `declarativeAgent.json` → `ai-plugin.json` — registers the agent's capabilities and OAuth configuration with Microsoft Teams. Once sideloaded, users can invoke it directly in Copilot chat to trigger AI Foundry completions and inbox triage from within their normal workflow.";
+
+        if (lower.Contains("conversation") || lower.Contains("history") || lower.Contains("save") || lower.Contains("recent"))
+            return "Conversation history is persisted via the `/api/conversations` endpoints. Each exchange is stored with a unique ID, timestamp, and the full prompt/response pair. In production this uses Azure Blob Storage; in local development it falls back to in-memory storage. You can retrieve any past conversation by ID or list your most recent sessions.";
+
+        if (lower.Contains("draft") || lower.Contains("status update") || lower.Contains("write"))
+            return "Here is a draft status update:\n\n**Sprint Status — Current Week**\n\n✅ Completed: Azure AI Foundry chat integration, M365 Copilot plugin manifest chain, conversation persistence layer.\n🔄 In progress: OAuth configuration for Teams sideload, end-to-end integration tests.\n⚠️ Blocked: Awaiting Entra ID app registration approval from the tenant admin.\n\nOverall health: **On track**. No scope changes anticipated this sprint.";
+
+        if (lower.Contains("priority") || lower.Contains("prioritize") || lower.Contains("what should i") || lower.Contains("focus") || lower.Contains("tackle"))
+            return "Based on your current context, here are my recommended priorities:\n\n1. **High** — Review the customer escalation in your inbox (tenant provisioning failure — finance customer).\n2. **High** — Confirm Q1 roadmap decision with Avery before sprint planning tomorrow.\n3. **Medium** — Share the Azure AI Foundry integration sequence diagram with Liam by 3 PM.\n4. **Low** — Schedule architecture review follow-up for next week.\n\nWould you like me to draft a response to any of these?";
+
+        if (lower.Contains("help") || lower.Contains("what can you") || lower.Contains("capabilities") || lower.Contains("feature"))
+            return "I'm the Azure AI Foundry Copilot assistant. Here's what I can do:\n\n1. **Answer questions** — Ask me anything about Azure AI, Microsoft 365, or your enterprise workflows.\n2. **Summarize your inbox** — I'll pull unread emails via Microsoft Graph and prioritize action items.\n3. **Draft content** — Status updates, meeting agendas, summaries, and more.\n4. **Manage conversations** — I save our exchanges so you can retrieve or review them later.\n5. **Integrate with Teams** — I'm available as a declarative Copilot plugin directly in Microsoft Teams.";
+
+        return $"I've processed your request: \"{prompt.Trim()}\"\n\nAs your Azure AI Foundry Copilot, I can help with enterprise AI tasks, Microsoft 365 inbox triage, and workflow automation. Try asking me to summarize your unread emails, draft a status update, or explain a specific Azure AI capability.";
     }
 
     private async Task<ChatClient> GetChatClientAsync(string apiKey, CancellationToken cancellationToken)
