@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AzureAiFoundryCopilot.Infrastructure.Options;
 
 public sealed class BlobStorageOptions
@@ -8,5 +10,6 @@ public sealed class BlobStorageOptions
 
     public string ConnectionString { get; init; } = string.Empty;
 
+    [Required(AllowEmptyStrings = false)]
     public string ContainerName { get; init; } = "conversations";
 }

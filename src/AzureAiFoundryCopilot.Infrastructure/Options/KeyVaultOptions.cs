@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AzureAiFoundryCopilot.Infrastructure.Options;
 
 public sealed class KeyVaultOptions
@@ -6,5 +8,7 @@ public sealed class KeyVaultOptions
 
     public bool Enabled { get; init; }
 
+    [Required(AllowEmptyStrings = false)]
+    [Url]
     public string VaultUri { get; init; } = string.Empty;
 }
